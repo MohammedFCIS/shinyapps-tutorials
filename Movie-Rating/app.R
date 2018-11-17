@@ -1,7 +1,7 @@
 library(shiny)
-library(ggplot2)
+library(tidyverse)
 library(DT)
-library(dplyr)
+
 load(
   url(
     "http://s3.amazonaws.com/assets.datacamp.com/production/course_4850/datasets/movies.Rdata"
@@ -120,9 +120,12 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
     
     # Outputs
     mainPanel(
-      plotOutput(outputId = "scatterplot"),
-      plotOutput(outputId = "densityplot", height = 200),
+      plotOutput(outputId = "scatterplot", brush = "plot_brush"),
+      br(),
       textOutput(outputId = "correlation"),
+      plotOutput(outputId = "densityplot", height = 200),
+      dataTableOutput(outputId = "moviestable1"),
+      br(),
       DT::dataTableOutput(outputId = "moviestable")
     )
   ))
@@ -169,6 +172,12 @@ server <- function(input, output) {
   output$correlation <- renderText({
     r <- round(cor(movies[, input$x], movies[, input$y], use = "pairwise"), 3)
     paste0("Correlation = ", r, ". Note: If the relationship between the two variables is not linear, the correlation coefficient will not be meaningful.")
+  })
+  
+  # Create data table
+  output$moviestable1 <- DT::renderDataTable({
+    brushedPoints(movies, brush = input$plot_brush) %>% 
+      select(title, audience_score, critics_score)
   })
 }
 

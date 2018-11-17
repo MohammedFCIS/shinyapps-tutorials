@@ -122,6 +122,7 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
     mainPanel(
       plotOutput(outputId = "scatterplot"),
       plotOutput(outputId = "densityplot", height = 200),
+      textOutput(outputId = "correlation"),
       DT::dataTableOutput(outputId = "moviestable")
     )
   ))
@@ -162,6 +163,12 @@ server <- function(input, output) {
       options = list(pageLength = 10),
       rownames = FALSE
     )
+  })
+  
+  # Create text output stating the correlation between the two ploted 
+  output$correlation <- renderText({
+    r <- round(cor(movies[, input$x], movies[, input$y], use = "pairwise"), 3)
+    paste0("Correlation = ", r, ". Note: If the relationship between the two variables is not linear, the correlation coefficient will not be meaningful.")
   })
 }
 

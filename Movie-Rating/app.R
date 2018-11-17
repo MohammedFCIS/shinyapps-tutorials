@@ -8,6 +8,7 @@ load(
   )
 )
 n_total <- nrow(movies)
+all_studios <- sort(unique(movies$studio))
 
 # Define UI for application that plots features of movies
 ui <- fluidPage(# Sidebar layout with a input and output definitions
@@ -74,6 +75,15 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
         step = 1,
         min = 1,
         max = n_total
+      ),
+      # Studio Selector
+      sidebarPanel(
+        selectInput(inputId = "studio",
+                    label = "Select studio:",
+                    choices = all_studios,
+                    selected = "20th Century Fox",
+                    multiple = TRUE,
+                    selectize = TRUE)
       )
     ),
     
@@ -106,8 +116,10 @@ server <- function(input, output) {
   # Create data table
   output$moviestable <- DT::renderDataTable({
     req(input$n)
+    req(input$studio)
     movies_sample <- movies %>%
-      sample_n(input$n) %>%
+      filter(studio %in% input$studio) %>%
+      #sample_n(input$n) %>%
       select(title:studio)
     DT::datatable(
       data = movies_sample,

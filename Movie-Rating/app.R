@@ -123,6 +123,11 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
       plotOutput(outputId = "scatterplot", brush = "plot_brush"),
       br(),
       textOutput(outputId = "correlation"),
+      br(),
+      textOutput(outputId = "avg_x"), # avg of x
+      textOutput(outputId = "avg_y"), # avg of y
+      verbatimTextOutput(outputId = "lmoutput"), # regression output
+      br(),
       plotOutput(outputId = "densityplot", height = 200),
       dataTableOutput(outputId = "moviestable1"),
       br(),
@@ -178,6 +183,26 @@ server <- function(input, output) {
   output$moviestable1 <- DT::renderDataTable({
     brushedPoints(movies, brush = input$plot_brush) %>% 
       select(title, audience_score, critics_score)
+  })
+  
+  # Calculate average of x
+  output$avg_x <- renderText({
+    avg_x <- movies %>% pull(input$x) %>% mean() %>% round(2)
+    paste("Average", input$x, "=", avg_x)
+  })
+  
+  # Calculate average of y
+  output$avg_y <- renderText({
+    avg_y <- movies %>% pull(input$y) %>% mean() %>% round(2)
+    paste("Average", input$y, "=", avg_y)
+  })
+  
+  # Create regression output
+  output$lmoutput <- renderPrint({
+    x <- movies %>% pull(input$x)
+    y <- movies %>% pull(input$y)
+    summ <- summary(lm(y ~ x, data = movies)) 
+    print(summ, digits = 3, signif.stars = FALSE)
   })
 }
 

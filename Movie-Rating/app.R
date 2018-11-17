@@ -49,7 +49,8 @@ ui <- fluidPage(
     
     # Outputs
     mainPanel(
-      plotOutput(outputId = "scatterplot")
+      plotOutput(outputId = "scatterplot"),
+      plotOutput(outputId = "densityplot", height = 200)
     )
   )
 )
@@ -62,6 +63,12 @@ server <- function(input, output) {
     ggplot(data = movies, aes_string(x = input$x, y = input$y,
                                      color = input$z)) +
       geom_point(alpha = input$alpha)
+  })
+  
+  # Create densityplot
+  output$densityplot <- renderPlot({
+    ggplot(data = movies, aes_string(x = input$x)) +
+      geom_density()
   })
 }
 

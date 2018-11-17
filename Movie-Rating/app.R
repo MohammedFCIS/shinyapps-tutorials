@@ -9,6 +9,8 @@ load(
 )
 n_total <- nrow(movies)
 all_studios <- sort(unique(movies$studio))
+min_date <- min(movies$thtr_rel_date)
+max_date <- max(movies$thtr_rel_date)
 
 # Define UI for application that plots features of movies
 ui <- fluidPage(# Sidebar layout with a input and output definitions
@@ -78,13 +80,42 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
       ),
       # Studio Selector
       sidebarPanel(
-        selectInput(inputId = "studio",
-                    label = "Select studio:",
-                    choices = all_studios,
-                    selected = "20th Century Fox",
-                    multiple = TRUE,
-                    selectize = TRUE)
+        selectInput(
+          inputId = "studio",
+          label = "Select studio:",
+          choices = all_studios,
+          selected = "20th Century Fox",
+          multiple = TRUE,
+          selectize = TRUE
+        )
+      ),
+      
+      # Explanatory text
+      HTML(
+        paste0(
+          "Movies released between the following dates will be plotted.
+          Pick dates between ",
+          min_date,
+          " and ",
+          max_date,
+          "."
+        )
+      ),
+      
+      # Break for visual separation
+      br(),
+      br(),
+      # Date input
+      dateRangeInput(
+        inputId = "date",
+        label = "Select dates:",
+        start = "2013-01-01",
+        end = "2014-01-01",
+        min = min_date,
+        max = max_date,
+        startview = "year"
       )
+      
     ),
     
     # Outputs
@@ -99,7 +130,12 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
 server <- function(input, output) {
   # Create the scatterplot object the plotOutput function is expecting
   output$scatterplot <- renderPlot({
-    ggplot(data = movies, aes_string(
+    req(input$date)
+    movies_selected_date <- movies %>%
+      mutate(thtr_rel_date = as.Date(thtr_rel_date)) %>% # convert thtr_rel_date to Date format
+      filter(thtr_rel_date >= input$date[1] &
+               thtr_rel_date <= input$date[2])
+    ggplot(data = movies_selected_date, aes_string(
       x = input$x,
       y = input$y,
       color = input$z

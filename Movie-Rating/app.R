@@ -124,8 +124,7 @@ ui <- fluidPage(# Sidebar layout with a input and output definitions
       br(),
       textOutput(outputId = "correlation"),
       br(),
-      textOutput(outputId = "avg_x"), # avg of x
-      textOutput(outputId = "avg_y"), # avg of y
+      htmlOutput(outputId = "avgs"),
       verbatimTextOutput(outputId = "lmoutput"), # regression output
       br(),
       plotOutput(outputId = "densityplot", height = 200),
@@ -185,16 +184,15 @@ server <- function(input, output) {
       select(title, audience_score, critics_score)
   })
   
-  # Calculate average of x
-  output$avg_x <- renderText({
+  # Calculate averages
+  output$avgs <- renderUI({
     avg_x <- movies %>% pull(input$x) %>% mean() %>% round(2)
-    paste("Average", input$x, "=", avg_x)
-  })
-  
-  # Calculate average of y
-  output$avg_y <- renderText({
     avg_y <- movies %>% pull(input$y) %>% mean() %>% round(2)
-    paste("Average", input$y, "=", avg_y)
+    HTML(
+      paste("Average", input$x, "=", avg_x),
+      "<br/>",
+      paste("Average", input$y, "=", avg_y)
+    )
   })
   
   # Create regression output

@@ -1,208 +1,159 @@
 library(shiny)
-library(tidyverse)
+library(shinythemes)
+library(readr)
+library(ggplot2)
+library(stringr)
+library(dplyr)
 library(DT)
-
-load(
-  url(
-    "http://s3.amazonaws.com/assets.datacamp.com/production/course_4850/datasets/movies.Rdata"
-  )
-)
-n_total <- nrow(movies)
-all_studios <- sort(unique(movies$studio))
-min_date <- min(movies$thtr_rel_date)
-max_date <- max(movies$thtr_rel_date)
+library(tools)
+load(url("http://s3.amazonaws.com/assets.datacamp.com/production/course_4850/datasets/movies.Rdata"))
+movies_codebook <- read_csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_4850/datasets/movies_codebook.csv")
 
 # Define UI for application that plots features of movies
-ui <- fluidPage(# Sidebar layout with a input and output definitions
+ui <- fluidPage(
+  themeSelector(),
+  # App title
+  titlePanel("Movie browser, 1970 - 2014", windowTitle = "Movies"),
+  
+  # Sidebar layout with a input and output definitions
   sidebarLayout(
+    
     # Inputs
     sidebarPanel(
-      # Select variable for y-axis
-      selectInput(
-        inputId = "y",
-        label = "Y-axis:",
-        choices = c(
-          "IMDB rating"          = "imdb_rating",
-          "IMDB number of votes" = "imdb_num_votes",
-          "Critics score"        = "critics_score",
-          "Audience score"       = "audience_score",
-          "Runtime"              = "runtime"
-        ),
-        selected = "audience_score"
-      ),
       
-      # Select variable for x-axis
-      selectInput(
-        inputId = "x",
-        label = "X-axis:",
-        choices = c(
-          "IMDB rating"          = "imdb_rating",
-          "IMDB number of votes" = "imdb_num_votes",
-          "Critics score"        = "critics_score",
-          "Audience score"       = "audience_score",
-          "Runtime"              = "runtime"
-        ),
-        selected = "critics_score"
-      ),
+      h3("Plotting"),      # Third level header: Plotting
       
-      # Select variable for color
-      selectInput(
-        inputId = "z",
-        label = "Color by:",
-        choices = c(
-          "Title type" = "title_type",
-          "Genre" = "genre",
-          "MPAA rating" = "mpaa_rating",
-          "Critics rating" = "critics_rating",
-          "Audience rating" = "audience_rating"
-        ),
-        selected = "mpaa_rating"
-      ),
-      # Set alpha level
-      sliderInput(
-        inputId = "alpha",
-        label = "Alpha:",
-        min = 0,
-        max = 1,
-        value = 0.5
-      ),
-      # Text instructions
-      HTML(paste("Enter a value between 1 and", n_total)),
+      # Select variable for y-axis 
+      selectInput(inputId = "y", 
+                  label = "Y-axis:",
+                  choices = c("IMDB rating" = "imdb_rating", 
+                              "IMDB number of votes" = "imdb_num_votes", 
+                              "Critics Score" = "critics_score", 
+                              "Audience Score" = "audience_score", 
+                              "Runtime" = "runtime"), 
+                  selected = "audience_score"),
       
-      # Numeric input for sample size
-      numericInput(
-        inputId = "n",
-        label = "Sample size:",
-        value = 30,
-        step = 1,
-        min = 1,
-        max = n_total
-      ),
-      # Studio Selector
-      sidebarPanel(
-        selectInput(
-          inputId = "studio",
-          label = "Select studio:",
-          choices = all_studios,
-          selected = "20th Century Fox",
-          multiple = TRUE,
-          selectize = TRUE
-        )
-      ),
+      # Select variable for x-axis 
+      selectInput(inputId = "x", 
+                  label = "X-axis:",
+                  choices = c("IMDB rating" = "imdb_rating", 
+                              "IMDB number of votes" = "imdb_num_votes", 
+                              "Critics Score" = "critics_score", 
+                              "Audience Score" = "audience_score", 
+                              "Runtime" = "runtime"), 
+                  selected = "critics_score"),
       
-      # Explanatory text
-      HTML(
-        paste0(
-          "Movies released between the following dates will be plotted.
-          Pick dates between ",
-          min_date,
-          " and ",
-          max_date,
-          "."
-        )
-      ),
+      # Enter text for plot title
+      textInput(inputId = "plot_title", 
+                label = "Plot title", 
+                placeholder = "Enter text to be used as plot title"),
       
-      # Break for visual separation
-      br(),
-      br(),
-      # Date input
-      dateRangeInput(
-        inputId = "date",
-        label = "Select dates:",
-        start = "2013-01-01",
-        end = "2014-01-01",
-        min = min_date,
-        max = max_date,
-        startview = "year"
-      )
+      hr(),
+      
+      h3("Subsetting"),    # Third level header: Subsetting
+      
+      # Select which types of movies to plot
+      checkboxGroupInput(inputId = "selected_type",
+                         label = "Select movie type(s):",
+                         choices = c("Documentary", "Feature Film", "TV Movie"),
+                         selected = "Feature Film"),
+      
+      hr(),
+      
+      # Show data table
+      checkboxInput(inputId = "show_data",
+                    label = "Show data table",
+                    value = TRUE),
+      
+      # Built with Shiny by RStudio
+      br(), br(),
+      h5("Built with",
+         img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "30px"),
+         "by",
+         img(src = "https://www.rstudio.com/wp-content/uploads/2014/07/RStudio-Logo-Blue-Gray.png", height = "30px"),
+         ".")
       
     ),
     
-    # Outputs
+    # Output:
     mainPanel(
-      plotOutput(outputId = "scatterplot", brush = "plot_brush"),
-      br(),
-      textOutput(outputId = "correlation"),
-      br(),
-      htmlOutput(outputId = "avgs"),
-      verbatimTextOutput(outputId = "lmoutput"), # regression output
-      br(),
-      plotOutput(outputId = "densityplot", height = 200),
-      dataTableOutput(outputId = "moviestable1"),
-      br(),
-      DT::dataTableOutput(outputId = "moviestable")
+      
+      tabsetPanel(type = "tabs",
+                  id = "tabsetpanel",
+                  tabPanel(title = "Plot", 
+                           plotOutput(outputId = "scatterplot"),
+                           br(),
+                           h5(textOutput("description"))),
+                  tabPanel(title = "Data", 
+                           br(),
+                           DT::dataTableOutput(outputId = "moviestable")),
+                  # New tab panel for Codebook
+                  tabPanel("Codebook", 
+                           br(),
+                           dataTableOutput(outputId = "codebook"))
+      )
     )
-  ))
+  )
+)
 
 # Define server function required to create the scatterplot
-server <- function(input, output) {
-  # Create the scatterplot object the plotOutput function is expecting
+server <- function(input, output, session) {
+  
+  # Create a subset of data filtering for selected title types
+  movies_selected <- reactive({
+    req(input$selected_type) # ensure availablity of value before proceeding
+    filter(movies, title_type %in% input$selected_type)
+  })
+  
+  # x and y as reactive expressions
+  x <- reactive({ toTitleCase(str_replace_all(input$x, "_", " ")) })
+  y <- reactive({ toTitleCase(str_replace_all(input$y, "_", " ")) })
+  
+  # Create scatterplot object the plotOutput function is expecting 
   output$scatterplot <- renderPlot({
-    req(input$date)
-    movies_selected_date <- movies %>%
-      mutate(thtr_rel_date = as.Date(thtr_rel_date)) %>% # convert thtr_rel_date to Date format
-      filter(thtr_rel_date >= input$date[1] &
-               thtr_rel_date <= input$date[2])
-    ggplot(data = movies_selected_date, aes_string(
-      x = input$x,
-      y = input$y,
-      color = input$z
-    )) +
-      geom_point(alpha = input$alpha)
+    ggplot(data = movies_selected(), aes_string(x = input$x, y = input$y)) +
+      geom_point() +
+      labs(x = x(),
+           y = y(),
+           color = toTitleCase(str_replace_all(input$z, "_", " ")),
+           title = toTitleCase(input$plot_title))
   })
   
-  # Create densityplot
-  output$densityplot <- renderPlot({
-    ggplot(data = movies, aes_string(x = input$x)) +
-      geom_density()
+  # Create description of plot
+  output$description <- renderText({
+    paste("The plot above shows the relationship between",
+          x(),
+          "and",
+          y(),
+          "for",
+          nrow(movies_selected()),
+          "movies.")
   })
   
-  # Create data table
-  output$moviestable <- DT::renderDataTable({
-    req(input$n)
-    req(input$studio)
-    movies_sample <- movies %>%
-      filter(studio %in% input$studio) %>%
-      #sample_n(input$n) %>%
-      select(title:studio)
-    DT::datatable(
-      data = movies_sample,
-      options = list(pageLength = 10),
-      rownames = FALSE
-    )
+  # Print data table if checked
+  output$moviestable <- DT::renderDataTable(
+    DT::datatable(data = movies_selected()[, 1:6], 
+                  options = list(pageLength = 10), 
+                  rownames = FALSE)
+  )
+  
+  # Display data table tab only if show_data is checked
+  observeEvent(input$show_data, {
+    if(input$show_data){
+      showTab(inputId = "tabsetpanel", target = "Data", select = TRUE)
+    } else {
+      hideTab(inputId = "tabsetpanel", target = "Data")
+    }
   })
   
-  # Create text output stating the correlation between the two ploted 
-  output$correlation <- renderText({
-    r <- round(cor(movies[, input$x], movies[, input$y], use = "pairwise"), 3)
-    paste0("Correlation = ", r, ". Note: If the relationship between the two variables is not linear, the correlation coefficient will not be meaningful.")
+  # Render data table for codebook
+  output$codebook <- renderDataTable({
+    datatable(data = movies_codebook,
+              options = list(pageLength = 10, lengthMenu = c(10, 25, 40)), 
+              rownames = FALSE)
   })
   
-  # Create data table
-  output$moviestable1 <- DT::renderDataTable({
-    brushedPoints(movies, brush = input$plot_brush) %>% 
-      select(title, audience_score, critics_score)
-  })
-  
-  # Calculate averages
-  output$avgs <- renderUI({
-    avg_x <- movies %>% pull(input$x) %>% mean() %>% round(2)
-    avg_y <- movies %>% pull(input$y) %>% mean() %>% round(2)
-    HTML(
-      paste("Average", input$x, "=", avg_x),
-      "<br/>",
-      paste("Average", input$y, "=", avg_y)
-    )
-  })
-  
-  # Create regression output
-  output$lmoutput <- renderPrint({
-    x <- movies %>% pull(input$x)
-    y <- movies %>% pull(input$y)
-    summ <- summary(lm(y ~ x, data = movies)) 
-    print(summ, digits = 3, signif.stars = FALSE)
-  })
 }
 
-# Create a Shiny app object
+# Create Shiny app object
 shinyApp(ui = ui, server = server)

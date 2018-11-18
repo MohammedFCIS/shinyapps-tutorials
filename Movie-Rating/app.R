@@ -163,7 +163,7 @@ server <- function(input, output, session) {
   # Display data table tab only if show_data is checked
   observeEvent(input$show_data, {
     if(input$show_data){
-      showTab(inputId = "tabsetpanel", target = "Data", select = TRUE)
+      showTab(inputId = "tabsetpanel", target = "Data")
     } else {
       hideTab(inputId = "tabsetpanel", target = "Data")
     }

@@ -103,9 +103,12 @@ ui <- fluidPage(
       tabsetPanel(type = "tabs",
                   id = "tabsetpanel",
                   tabPanel(title = "Plot", 
-                           plotOutput(outputId = "scatterplot"),
+                           plotOutput(outputId = "scatterplot", brush = "plot_brush"),
                            br(),
-                           h5(textOutput("description"))),
+                           h5(textOutput("description")),
+                           br(),
+                           h3("Selected Movies"),
+                           dataTableOutput(outputId = "moviestable1")),
                   tabPanel(title = "Data", 
                            br(),
                            DT::dataTableOutput(outputId = "moviestable")),
@@ -174,6 +177,12 @@ server <- function(input, output, session) {
     datatable(data = movies_codebook,
               options = list(pageLength = 10, lengthMenu = c(10, 25, 40)), 
               rownames = FALSE)
+  })
+  
+  # Create data table
+  output$moviestable1 <- DT::renderDataTable({
+    brushedPoints(movies, brush = input$plot_brush) %>% 
+      select(title, audience_score, critics_score)
   })
   
 }

@@ -43,6 +43,28 @@ ui <- fluidPage(
                               "Runtime" = "runtime"), 
                   selected = "critics_score"),
       
+      # Select variable for color
+      selectInput(
+        inputId = "z",
+        label = "Color by:",
+        choices = c(
+          "Title type" = "title_type",
+          "Genre" = "genre",
+          "MPAA rating" = "mpaa_rating",
+          "Critics rating" = "critics_rating",
+          "Audience rating" = "audience_rating"
+        ),
+        selected = "mpaa_rating"
+      ),
+      # Set alpha level
+      sliderInput(
+        inputId = "alpha",
+        label = "Alpha:",
+        min = 0,
+        max = 1,
+        value = 0.5
+      ),
+      
       # Enter text for plot title
       textInput(inputId = "plot_title", 
                 label = "Plot title", 
@@ -111,8 +133,9 @@ server <- function(input, output, session) {
   
   # Create scatterplot object the plotOutput function is expecting 
   output$scatterplot <- renderPlot({
-    ggplot(data = movies_selected(), aes_string(x = input$x, y = input$y)) +
-      geom_point() +
+    ggplot(data = movies_selected(), aes_string(x = input$x, y = input$y,
+                                                color = input$z)) +
+      geom_point(alpha = input$alpha) +
       labs(x = x(),
            y = y(),
            color = toTitleCase(str_replace_all(input$z, "_", " ")),
